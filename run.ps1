@@ -1,2 +1,3 @@
-../zig/zig.exe c++ ./main.cpp -o main.exe
+clear
+../zig/zig.exe c++ ./bitset.cpp -o main.exe
 ./main.exe
