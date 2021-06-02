@@ -68,6 +68,7 @@ int main() {
 	// printall(&bits);
 	// bits.rotate();
 	// bits.printflat();
-	bool var[3] = {true, true, false};
+	vector<bool> var = {0, 0, 0, 0, 1, 0, 0, 0};
+	cout << bitset<8>(8) << endl;
 	booltoint(var);
 }
