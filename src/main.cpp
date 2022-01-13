@@ -1,84 +1,101 @@
 #include <iostream>
-#include <vector>
+// #include <vector>
+#include <array>
 #include <bitset>
 
-#include "err.hpp"
 
 using namespace std;
 
-
-// struct bitmap {
-// 	vector<bitset<8> > data = {0}; // space is required before the last '>' before C++11
-// 	bitmap(string word) {
-// 		if(word.size() > 8) {throw String_Parameter_Too_Long();}
-// 		if(word.size() < 8) {throw String_Parameter_Too_Short();}
-// 		for(int i = 0; i < 8; i++) {
-// 			data[i] = bitset<8>(word[i]);
-// 		}
-// 	}
-// 	bitmap() {}
-// 	int size() {return data.size();}
-// 	bitset<8> operator[](int index) {return data[index];}
-// 	void operator=(string word) {
-// 		if(word.size() > 8) {throw String_Parameter_Too_Long();}
-// 		if(word.size() < 8) {throw String_Parameter_Too_Short();}
-// 		for(int i = 0; i < 8; i++) {
-// 			data[i] = bitset<8>(word[i]);
-// 		}
-// 	}
-// };
-
-// // handles 8 by 8 bit grid movemoents
-// class Handler {
-// 	bitmap data = string("        ");
-// 	public:
-// 		Handler(string data) {this->data = data;}
-// 		void print() {for(int i = 0; i < 8; i++) {cout << data[i] << '|';}} // print bits to console
-// 		void printi() {for(int i = 0; i < 8; i++) {cout << (int)(data[i].to_ulong()) << '|';}} // print bits as int
-// 		void printc() {for(int i = 0; i < 8; i++) {cout << (char)(int)(data[i].to_ulong()) << '|';}} //print bits as char
-// 		void printflat() {for(int i = 0; i < 8; i++) {cout << '|' << data[i] << '|' << endl;}} // print bits in lateral format
-// 		void rotate(bool clock = true) { // rotate 90 degrees clockwise by default
-// 			bitmap tmp;
-// 			cout << tmp.size();
-// 				// for(int i = 0; i < 8; i++) {
-// 				// 	for(int i = 8; i > 0; i--) {
-// 				// 		tmp[i][o]
-// 				// 	}
-// 				// }
-// 			// complete this function
-// 		}
-// 		void flip(bool flipx = true); // flips on x axis by default
-// };
-
-
-// void printall(Handler* bithandler) {
-// 	bithandler->print();
-// 	cout << endl;
-// 	bithandler->printi();
-// 	cout << endl;
-// 	bithandler->printc();
-// 	cout << endl;
-// }
-
-class bitarray {
-	bool data[8] = {0};
-	unsigned char tobyte() {
-		unsigned char c = 0;
-		for(int i = 0; i < 8; i++) {if(data[i]) {c |= 1 << i;}}
-		return c;
-	}
-	void frombyte(unsigned char c) {
-		for(int i = 0; i < 8; i++) {
-			data[i] = (c & (i<<i)) != 0;
+// Square grid from 2 bytes (unsigned chars)
+class BitSquare {
+	private:
+		array<bitset<4>, 4> square = {0, 0, 0, 0}; // 4 item std::array of 4 bit bitsets
+	public:
+		BitSquare(unsigned char *chars, int ix = 0, int iy = 1) {
+			// initialize each bitset to its half-byte (4 bits)
+			square[0] = bitset<4>(chars[ix] >> 4);
+			square[1] = bitset<4>(chars[ix] & 0xff);
+			square[2] = bitset<4>(chars[iy] >> 4);
+			square[3] = bitset<4>(chars[iy] & 0xff);
+		}
+		BitSquare() {return;} // default constructor
+		void flipx(); // flip the square over the x axis (reflection)
+		void flipy(); // flip the square over the y axis (relfection)
+		void print(); // print the square as a grid
+		bool operator==(const BitSquare &rhs); // check if two bitsquares are equal
+};
+void BitSquare::flipx() {
+	// create a temporary btisquare
+	bitset<4> tmp[4];
+	for (int i = 0; i < 4; i++) { // iterate for each bitset in the square
+		int o = 3; // iterate backwards starting at the last bit of `square[i]`
+		int e = 0; // iterate forwards starting at the first bit of `tmp[i]`
+		while (o >= 0) {
+			tmp[i].set(o, square[i][e]); // set opposite side of one bitset to the other
+			o--;
+			e++;
 		}
 	}
+	for (int i = 0; i < 4; i++) { // deep copy tmp into square
+		square[i] = tmp[i];
+	}
+}
+void BitSquare::flipy() {
+	array<bitset<4>, 4> tmp; // tmp array 4 by bitset 4 (4x4)
+	int i = 3; // iteration of square
+	int o = 0; // iteration of tmp
+	while (i >= 0) {
+		tmp[o] = square[i]; // copy opposing side of square to tmp
+		i--;
+		o++;
+	}
+	square = tmp; // deep copy tmp to square
+}
+void BitSquare::print() {
+	for (int i = 0; i < 4; i++) {
+		cout << "|";
+		for (int o = 0; o < 4; o++) {
+			cout << square[i].test(o) << "|";
+		}
+		cout << endl;
+	}
+}
+bool BitSquare::operator==(const BitSquare &rhs) {
+	return this->square == rhs.square; // compare dereferenced `square` of each bitsquare
+}
+
+
+class BitCube {
+	private:
+		BitSquare faces[6];
 	public:
-		bitarray(char in) {frombyte(in);}
-		void print() {for(int i = 0; i < 8; i++) {cout << data[i];}}
+		BitCube(unsigned char *chars) { // initialize each face of the cube
+			faces[0] = BitSquare(chars);
+			faces[1] = faces[0];
+			faces[1].flipx();
+			faces[2] = faces[1];
+			faces[2].flipy();
+		}
+		void print(); // print all faces that are not empty
+		void write(string fname);
 };
+void BitCube::print() {
+	for (int i = 0; i < 6; i++) {
+		if (!(faces[i] == BitSquare())) {
+			faces[i].print();
+			cout << endl;
+		}
+	}
+}
+
 
 int main() {
-	bitarray booltmp('a');
-	booltmp.print();
-	cout << endl << bitset<8>('a') << endl;
+
+	unsigned char chars[2] = {'a', 'b'};
+
+	BitCube data(chars);
+	data.print();
+
+	cout << bitset<8>('a') << endl;
+	cout << bitset<8>('b') << endl;
 }
